@@ -1,7 +1,12 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:vtt/cosmos.dart';
 
 const double cardHeaderSize = 32;
+const double resizeAreaSize = 24;
+const double minCardWidth = 100;
+const double minCardHeight = 100;
 
 class XCard extends StatefulWidget {
   const XCard({
@@ -28,43 +33,52 @@ class _XCardState extends State<XCard> implements XDraggable {
   double y = 0;
   late double w = widget.width;
   late double h = widget.height;
+  bool resizing = false;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
       left: x,
       top: y,
-      child: Container(
-        width: w,
-        height: h,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.green),
-        ),
+      child: Listener(
+        onPointerDown: (PointerDownEvent e) {
+          if (w - e.localPosition.dx < resizeAreaSize && h - e.localPosition.dy < resizeAreaSize) {
+            setState(() => resizing = true);
+          } else {
+            widget.setDragging(this);
+          }
+        },
+        onPointerUp: (PointerUpEvent e) {
+          setState(() => resizing = false);
+        },
+        onPointerMove: (PointerMoveEvent e) {
+          if (resizing) {
+            setState(() {
+              w = max(minCardWidth, w + e.delta.dx);
+              h = max(minCardHeight, h + e.delta.dy);
+            });
+          }
+        },
         child: Stack(
           children: [
-            // Listener(
-            //   onPointerDown: (PointerDownEvent e) => widget.setDragging(this),
-            //   child: Container(
-            //     height: 32,
-            //     color: Colors.greenAccent,
-            //     child: widget.title != null
-            //         ? Center(
-            //             child: Text(
-            //               widget.title!,
-            //               style: Theme.of(context).textTheme.titleMedium,
-            //             ),
-            //           )
-            //         : null,
-            //   ),
-            // ),
-            Positioned(top: cardHeaderSize, child: widget.child),
-            Listener(
-              onPointerDown: (PointerDownEvent e) => widget.setDragging(this),
-              child: const Icon(
-                Icons.drag_indicator,
-                color: Colors.green,
-                size: cardHeaderSize,
+            Container(
+              width: w,
+              height: h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.green),
+              ),
+              child: widget.child,
+            ),
+            const Positioned(
+              right: 0,
+              bottom: 0,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.resizeDownRight,
+                child: SizedBox(
+                  width: resizeAreaSize,
+                  height: resizeAreaSize,
+                ),
               ),
             ),
           ],
